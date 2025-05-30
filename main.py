@@ -1,9 +1,8 @@
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 import config
-from users import get_okx_account, set_okx_account, activate_subscription, is_active
 
-# كل القوائم الرئيسية
+# القوائم الرئيسية والفرعية
 MAIN_MENU = [
     ["تداول العملات", "تحليل السوق والعملات"],
     ["ادارة المال والمخاطر", "تثبيت على عملة معينة"],
@@ -12,8 +11,6 @@ MAIN_MENU = [
     ["التقارير", "نسخ التداول"],
     ["تعلم التداول", "إعدادات الحساب"]
 ]
-
-# قوائم فرعية لكل خانة
 TRADING_MENU = [
     ["شراء عملة", "بيع عملة"],
     ["شراء بوقت محدد", "توزيع رأس المال"],
@@ -70,12 +67,10 @@ SETTINGS_MENU = [
     ["رجوع ← القائمة الرئيسية"]
 ]
 
-# دالة عرض أي قائمة
 async def show_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, menu):
     reply_markup = ReplyKeyboardMarkup(menu, resize_keyboard=True)
     await update.message.reply_text("يرجى اختيار أحد الخيارات:", reply_markup=reply_markup)
 
-# دالة التحكم في جميع القوائم
 async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     if text == "تداول العملات":
@@ -101,32 +96,18 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "إعدادات الحساب":
         await show_menu(update, context, SETTINGS_MENU)
     elif text == "المساعدة":
-        await update.message.reply_text(f"للمساعدة راسل المطور: @{config.ADMIN_USERNAME}")
+        await update.message.reply_text("للمساعدة راسل المطور.")
     elif "رجوع ← القائمة الرئيسية" in text:
         await show_menu(update, context, MAIN_MENU)
     else:
         await update.message.reply_text(f"تم اختيار: {text}\nسيتم تنفيذ الأمر قريبًا أو اختر من القائمة.")
 
-# دالة بدء البوت
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = str(update.effective_user.id)
-    if not is_active(user_id):
-        await update.message.reply_text("يجب تفعيل الاشتراك الشهري. أرسل رمز التفعيل:")
-        return
     await show_menu(update, context, MAIN_MENU)
 
-# دالة تفعيل الاشتراك
-async def subscription_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = str(update.effective_user.id)
-    code = update.message.text.strip()
-    if activate_subscription(user_id, code):
-        await update.message.reply_text("تم تفعيل الاشتراك الشهري بنجاح! أرسل /start للبدء.")
-    else:
-        await update.message.reply_text("رمز الاشتراك غير صحيح. حاول مرة أخرى.")
-
 if __name__ == "__main__":
+    import config
     app = ApplicationBuilder().token(config.TELEGRAM_BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, subscription_handler))  # كود الاشتراك
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))          # القوائم والتداول
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
     app.run_polling()
