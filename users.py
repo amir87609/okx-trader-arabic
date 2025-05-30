@@ -1,5 +1,6 @@
 import json
 from datetime import datetime, timedelta
+import config
 
 USERS_FILE = "users.json"
 
@@ -41,6 +42,9 @@ def activate_subscription(user_id, code):
     return True
 
 def is_active(user_id):
+    # إذا المستخدم هو الأدمن يعتبر نشط دائماً
+    if str(user_id) == str(config.ADMIN_USER_ID):
+        return True
     users = load_users()
     user = users.get(str(user_id), {})
     if user.get("active") and user.get("expiry"):
